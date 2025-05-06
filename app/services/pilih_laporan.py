@@ -1,8 +1,5 @@
-
-from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text
-
-db = SQLAlchemy()
+from app.extensions import db
 
 def pilih_lap(data_parsing):
     laporan = data_parsing['tipe_laporan']
@@ -11,13 +8,14 @@ def pilih_lap(data_parsing):
 
     if laporan == 'pasien_regis':
         return pasien_regis(tanggal_awal, tanggal_akhir)
-    # Tambah if lain untuk jenis laporan
+    
     return {"error": "Jenis laporan tidak dikenali"}
 
 def pasien_regis(tanggal_awal, tanggal_akhir):
-    query = f" SELECT rj,ri FROM dbo.pasien_regis(:awal,:akhir) "
+    query = f" SELECT rj,ri FROM dbo.f_pasien_regis(:awal,:akhir) "
     result = db.session.execute(text(query), {'awal': tanggal_awal, 'akhir': tanggal_akhir})
     row = result.fetchone()
     if row:
         return {'rawat_jalan': row.rj, 'rawat_inap': row.ri}
+    
     return {'rawat_jalan': 0, 'rawat_inap': 0}

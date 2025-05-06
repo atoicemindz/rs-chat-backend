@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from app.services.openai_service import ask_chatgpt,ask_gemini
-from app.services.model import SessionLocal, Pasien
+from app.extensions import db
+from app.services.model import Pasien 
 from app.services.parser_tanya import parse_tanya
 from app.services.pilih_laporan import pilih_lap
 
@@ -23,7 +24,7 @@ def chat():
         return jsonify({'error': 'Gagal memproses pertanyaan'}), 500
     
     hasil_laporan = pilih_lap(hasil_parsing)
-    return jsonify(hasil_laporan)
+    return jsonify(hasil_parsing)
 
     # ai_response = ask_chatgpt(user_input)
     # ai_response = ask_gemini(user_input)
@@ -31,12 +32,13 @@ def chat():
 
 @main_bp.route("/pasien", methods=["GET"])
 def get_pasien():
-    db = SessionLocal()
     try:
-        pasien_list = db.query(Pasien).limit(10).all()
-        result = [{"id": p.NOPASIEN, "nama": p.NAMAPASIEN, "tgl_lahir": p.TGLLAHIR.strftime("%Y-%m-%d")} for p in pasien_list]
+        pasien_list = Pasien.query.limit(10).all()
+        result = [{
+            "id": p.NOPASIEN,
+            "nama": p.NAMAPASIEN,
+            "tgl_lahir": p.TGLLAHIR.strftime("%Y-%m-%d") if p.TGLLAHIR else None
+        } for p in pasien_list]
         return jsonify(result)
     except Exception as e:
-        return jsonify({"error": str(e)})
-    finally:
-        db.close()
+        return jsonify({"error": str(e)}), 500

@@ -1,5 +1,5 @@
-import os
 from dotenv import load_dotenv
+import os
 from urllib.parse import quote_plus
 
 dotenv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
