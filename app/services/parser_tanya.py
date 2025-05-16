@@ -1,6 +1,6 @@
 import re
-from datetime import datetime, timedelta
-from dateutil import parser as date_parser
+from datetime import datetime
+from app.services.ai_service import ask_ai
 
 def parse_tanya(question: str):
     question = question.lower()
@@ -23,32 +23,20 @@ def parse_tanya(question: str):
         "tanggal2": end_date.strftime("%d/%m/%Y")
     }
 
-def detect_tanggal(text: str, today: datetime.date):
-    if "hari ini" in text:
-        return today, today
-    elif "kemarin" in text:
-        d = today - timedelta(days=1)
-        return d, d
-    elif "bulan ini" in text:
-        return today.replace(day=1), today
-    elif "bulan kemarin" in text:
-        first_of_this_month = today.replace(day=1)
-        last_month_end = first_of_this_month - timedelta(days=1)
-        return last_month_end.replace(day=1), last_month_end
-    else:
-        date_matches = re.findall(r'\d{1,2}[/-]\d{1,2}[/-]\d{2,4}', text)
-        if len(date_matches) >= 2:
-            try:
-                d1 = date_parser.parse(date_matches[0], dayfirst=True).date()
-                d2 = date_parser.parse(date_matches[1], dayfirst=True).date()
-                return d1, d2
-            except Exception:
-                pass
-        elif len(date_matches) == 1:
-            try:
-                d = date_parser.parse(date_matches[0], dayfirst=True).date()
-                return d, d
-            except Exception:
-                pass
-
+def detect_tanggal(question: str, today: datetime.date):
+    prompt = (
+        "Dari pertanyaan berikut, ekstrak tanggal awal dan tanggal akhir yang dimaksud. "
+        f"Jika tidak ada, gunakan tanggal hari ini ({today.strftime('%d/%m/%Y')}).\n\n"
+        f"Contoh format output: {{\"tanggal_awal\": \"01/01/2024\", \"tanggal_akhir\": \"31/01/2024\"}}\n\n"
+        f"Pertanyaan: \"{question}\""
+    )
+    try:
+        response = ask_ai(prompt)
+        match = re.search(r'"tanggal_awal"\s*:\s*"(\d{2}/\d{2}/\d{4})".*?"tanggal_akhir"\s*:\s*"(\d{2}/\d{2}/\d{4})"', response)
+        if match:
+            d1 = datetime.strptime(match.group(1), "%d/%m/%Y").date()
+            d2 = datetime.strptime(match.group(2), "%d/%m/%Y").date()
+            return d1, d2
+    except Exception:
+        pass
     return today, today
